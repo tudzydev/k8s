@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: demok8s
+  labels:
+    app: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+
+# strategy: คือ การกำหนดกลยุทธ์ในการอัปเดต Deployment ซึ่งมีหลายประเภท เช่น Recreate, RollingUpdate, BlueGreen เป็นต้น
+# RollingUpdate: คือ การอัปเดต Deployment โดยการค่อยๆ อัปเดต Pod ทีละตัวหรือทีละกลุ่ม โดยจะมีการกำหนด maxUnavailable และ maxSurge เพื่อควบคุมจำนวน Pod ที่ไม่พร้อมใช้งานและจำนวน Pod ที่สามารถเพิ่มขึ้นได้ในระหว่างการอัปเดต 
+  strategy:
+    type: Rollingupdate
+    rollingUpdate:
+      maxUnavailable: 1 # จำนวน Pod ที่สามารถไม่พร้อมใช้งานได้ในระหว่างการอัปเดต (เช่น ถ้า replicas=2 และ maxUnavailable=1 จะมี Pod อย่างน้อย 1 ตัวที่พร้อมใช้งานตลอดเวลา)
+      maxSurge: 1 # จำนวน Pod ที่สามารถเพิ่มขึ้นได้ในระหว่างการอัปเดต (เช่น ถ้า replicas=2 และ maxSurge=1 จะมี Pod สูงสุด 3 ตัวในระหว่างการอัปเดต)
+  
+  # template: คือ การกำหนดรูปแบบของ Pod ที่จะถูกสร้างขึ้นโดย Deployment ซึ่งจะมี metadata และ spec ที่กำหนดลักษณะของ Pod เช่น ชื่อ Container, Image, Port, Resource เป็นต้น
+  template:              
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: httpd
+        image: httpd
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
