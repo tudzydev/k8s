@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: linux
+  namespace: demok8s
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: 
+    - sleep
+    - "3600" # sleep 3600 seconds = 1 hour
+    resource:
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+  - name: apline
+    image: alpine
+    command: 
+    - sleep
+    - "3600" # sleep 3600 seconds = 1 hour
+    resource:
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
