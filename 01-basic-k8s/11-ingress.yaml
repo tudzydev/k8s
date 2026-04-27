@@ -3,29 +3,29 @@ kind: Ingress
 metadata:
   name: ingress-service
   namespace: demok8s
+# annotations เป็นส่วนที่ใช้ในการกำหนดค่าเพิ่มเติมสำหรับ Ingress โดยในที่นี้เราจะกำหนดให้ Ingress นี้ใช้ Ingress Controller ที่ชื่อว่า nginx และเราจะกำหนดให้ Ingress นี้สามารถใช้ regular expression ในการกำหนด path ได้
   annotations:
     kubernetes.io/ingress.class: nginx
-# annotations เป็นการกำหนดค่าเพิ่มเติมสำหรับ Ingress โดยในที่นี้เราจะกำหนดให้ Ingress นี้ใช้ Ingress Controller ที่ชื่อว่า nginx และเราจะกำหนดให้ Ingress นี้อยู่ใน namespace ชื่อ demok8s เพื่อให้เราสามารถจัดการกับทรัพยากรที่เกี่ยวข้องกับ Ingress นี้ได้ง่ายขึ้น และเราจะกำหนดให้ Ingress นี้มีชื่อว่า ingress-service เพื่อให้เราสามารถอ้างอิงถึง Ingress นี้ได้ง่ายขึ้น และเราจะกำหนดให้ Ingress นี้มี annotation เพิ่มเติมเพื่อให้สามารถใช้ regular expression ในการกำหนด path ได้
-    annotations:
-      nginx.ingress.kubernetes.io/use-regex: "true"
-# คิแ อการกำหนดกฎการเข้าถึงสำหรับ Ingress โดยมีการกำหนด host และ path ที่จะเชื่อมต่อกับ service ต่างๆ ใน cluster pathType: Prefix หมายความว่า ทุก path ที่ขึ้นต้นด้วย /api/ จะถูกส่งไปยัง server-service และทุก path ที่ขึ้นต้นด้วย / จะถูกส่งไปยัง client-service
+    nginx.ingress.kubernetes.io/use-regex: "true"
+
+# spec เป็นส่วนที่ใช้ในการกำหนดรายละเอียดของ Ingress โดยในที่นี้เราจะกำหนดให้ Ingress นี้ใช้ Ingress Controller ที่ชื่อว่า nginx และเราจะกำหนดให้ Ingress นี้มี rules ที่กำหนดให้เมื่อมีการเข้าถึง host ที่ชื่อว่า todo.site และ path ที่ขึ้นต้นด้วย /api/ จะถูกส่งต่อไปยัง Service ที่ชื่อว่า server-service และเมื่อมีการเข้าถึง host ที่ชื่อว่า todo.site และ path ที่ขึ้นต้นด้วย / จะถูกส่งต่อไปยัง Service ที่ชื่อว่า client-service โดยทั้งสอง Service นี้จะเปิด port 80 เพื่อให้สามารถเชื่อมต่อกับ API ที่ถูกติดตั้งใน Pod ได้ และเราจะกำหนดให้ Ingress นี้อยู่ใน namespace ชื่อ demok8s เพื่อให้เราสามารถจัดการกับทรัพยากรที่เกี่ยวข้องกับ Ingress นี้ได้ง่ายขึ้น
 spec:
   ingressClassName: nginx
   rules:
   - host: todo.site
     http:
       paths:
-          - path: /api/
-            pathType: Prefix
-            backend:
-              service:
-                name: server-service
-                port:
-                  number: 80
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: client-service
-                port:
-                  number: 80
+      - path: /api/
+        pathType: Prefix
+        backend:
+          service:
+            name: server-service
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: client-service
+            port:
+              number: 80
