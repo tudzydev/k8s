@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-apache
+  labels:
+    app: php-apache
+spec:
+  relicas: 2
+  selector:
+    matchLabels:
+      run: php-apache
+  template:
+    metadata:
+      labels:
+        run: php-apache
+    spec:
+      containers:
+      - name: php-apache
+        image: k8s.gcr.io/hpa-example
+        ports:
+          - containerPort: 80
+        resources:
+          limits:
+            cpu: "100Mi"
+            memory: "100Mi"
+          requests:
+            memory: "100Mi"
+            cpu: "100Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-apache
+  labels:
+    run: php-apache
+  namespace: demok8s
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
+  selector:
+    run: php-apache
+  
