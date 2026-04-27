@@ -1,0 +1,25 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-v1
+  namespace: demok8s
+spec:
+# คือการบอกว่า HPA นี้จะไปควบคุม Deployment ชื่อ php-apache ที่อยู่ใน apiVersion apps/v1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+# minReplicas คือจำนวนขั้นต่ำของ Pod ที่ HPA จะสร้างขึ้นมาเพื่อรองรับโหลด
+# maxReplicas คือจำนวนสูงสุดของ Pod ที่ HPA จะสร้างขึ้นมาเพื่อรองรับโหลด
+  minReplicas: 1
+  maxReplicas: 3
+# targetCPUUtilizationPercentage คือการบอกว่า HPA จะพยายามรักษาให้การใช้งาน CPU ของ Pod อยู่ที่ 50% ถ้าเกิน 50% HPA จะเพิ่มจำนวน Pod ขึ้นมาเพื่อรองรับโหลดที่เพิ่มขึ้น แต่ถ้าต่ำกว่า 50% HPA จะลดจำนวน Pod ลงมาเพื่อประหยัดทรัพยากร
+  targetCPUUtilizationPercentage: 50
+# metrics คือการบอกว่า HPA จะใช้ metric อะไรในการตัดสินใจว่าจะเพิ่มหรือลดจำนวน Pod
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
