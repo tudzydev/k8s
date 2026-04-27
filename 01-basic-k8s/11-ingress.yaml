@@ -6,6 +6,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/use-regex: "true"
+# คิแ อการกำหนดกฎการเข้าถึงสำหรับ Ingress โดยมีการกำหนด host และ path ที่จะเชื่อมต่อกับ service ต่างๆ ใน cluster pathType: Prefix หมายความว่า ทุก path ที่ขึ้นต้นด้วย /api/ จะถูกส่งไปยัง server-service และทุก path ที่ขึ้นต้นด้วย / จะถูกส่งไปยัง client-service
 spec:
   rules:
   - host: todo.site
