@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-deployment
+  labels:
+    app: server
+  namespace: demok8s
+# ในส่วนของ Deployment เราจะกำหนดให้มีชื่อว่า server-deployment และมี label เป็น app: server เพื่อให้เราสามารถเลือก Pod ที่ถูกสร้างขึ้นมาโดย Deployment นี้ได้ง่ายขึ้น และเราจะกำหนดให้ Deployment นี้อยู่ใน namespace ชื่อ demok8s เพื่อให้เราสามารถจัดการกับทรัพยากรที่เกี่ยวข้องกับ Deployment นี้ได้ง่ายขึ้น 
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      name: server-pods
+      labels:
+        app: server
+    spec:
+      containers:
+        - name: server
+          image: dekcode/todo-api:v5
+          resources:
+            limits:
+              memory: "500Mi"
+              cpu: "200m"
+            requests:
+              memory: "500Mi"
+              cpu: "200m"
+---
+# ในส่วนของ Service เราจะกำหนดให้มีชื่อว่า server-service และมี label เป็น run: server เพื่อให้เราสามารถเลือก Pod ที่ถูกสร้างขึ้นมาโดย Deployment นี้ได้ง่ายขึ้น และเราจะกำหนดให้ Service นี้อยู่ใน namespace ชื่อ demok8s เพื่อให้เราสามารถจัดการกับทรัพยากรที่เกี่ยวข้องกับ Service นี้ได้ง่ายขึ้น และเราจะกำหนดให้ Service นี้เป็นแบบ ClusterIP เพื่อให้สามารถเข้าถึง Pod ที่ถูกสร้างขึ้นมาโดย Deployment นี้ได้จากภายใน cluster และเราจะกำหนดให้ Service นี้เลือก Pod ที่มี label เป็น app: server เพื่อให้สามารถเชื่อมต่อกับ Pod ที่ถูกสร้างขึ้นมาโดย Deployment นี้ได้ และเราจะกำหนดให้ Service นี้เปิด port 80 เพื่อให้สามารถเชื่อมต่อกับ API ที่ถูกติดตั้งใน Pod ได้ 
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-service
+  namespace: demok8s
+spec:
+  type: ClusterIP
+  selector:
+    app: server
+  ports:
+    - port: 80
+      targetPort: 80
