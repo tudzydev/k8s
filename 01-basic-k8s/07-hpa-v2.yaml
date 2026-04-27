@@ -1,0 +1,42 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-v2
+  namespace: demok8s
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+  minReplicas: 3
+  maxReplicas: 10
+# metrics คือการบอกว่า HPA จะใช้ metric อะไรในการตัดสินใจว่าจะเพิ่มหรือลดจำนวน Pod โดยในที่นี้เราจะใช้ metric แบบ Resource ซึ่งจะดูที่การใช้งาน CPU และ Memory ของ Pod ว่าเกินกว่าที่กำหนดไว้หรือไม่ ถ้าเกิน HPA จะเพิ่มจำนวน Pod ขึ้นมาเพื่อรองรับโหลดที่เพิ่มขึ้น แต่ถ้าต่ำกว่า HPA จะลดจำนวน Pod ลงมาเพื่อประหยัดทรัพยากร
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 10 # 5% of the CPU
+# เราสามารถกำหนด metric ได้หลายแบบ เช่น Resource, Pods, Object, External โดยแต่ละแบบจะมีการตั้งค่าและการใช้งานที่แตกต่างกันไป ในที่นี้เราจะใช้ Resource ซึ่งจะดูที่การใช้งาน CPU และ Memory ของ Pod ว่าเกินกว่าที่กำหนดไว้หรือไม่ ถ้าเกิน HPA จะเพิ่มจำนวน Pod ขึ้นมาเพื่อรองรับโหลดที่เพิ่มขึ้น แต่ถ้าต่ำกว่า HPA จะลดจำนวน Pod ลงมาเพื่อประหยัดทรัพยากร
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 20 # 5% of the memory
+# behavior คือการบอกว่า HPA จะมีพฤติกรรมอย่างไรเมื่อมีการเพิ่มหรือลดจำนวน Pod โดยในที่นี้เราจะกำหนดให้ HPA มีพฤติกรรมในการลดจำนวน Pod ที่ช้าและมีการจำกัดการลดจำนวน Pod ในแต่ละครั้งเพื่อป้องกันไม่ให้ระบบเกิดปัญหาเมื่อมีการลดจำนวน Pod ลงมาอย่างรวดเร็ว แต่จะมีพฤติกรรมในการเพิ่มจำนวน Pod ที่เร็วและไม่มีการจำกัดการเพิ่มจำนวน Pod ในแต่ละครั้งเพื่อรองรับโหลดที่เพิ่มขึ้นอย่างรวดเร็ว
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 30 # 1 minute
+      policies:
+      - type: Pods
+        value: 3 # 1 pod
+        periodSeconds: 15 # 1 minute
+# เราสามารถกำหนดพฤติกรรมได้หลายแบบ เช่น scaleUp, scaleDown โดยแต่ละแบบจะมีการตั้งค่าและการใช้งานที่แตกต่างกันไป ในที่นี้เราจะกำหนดให้ HPA มีพฤติกรรมในการลดจำนวน Pod ที่ช้าและมีการจำกัดการลดจำนวน Pod ในแต่ละครั้งเพื่อป้องกันไม่ให้ระบบเกิดปัญหาเมื่อมีการลดจำนวน Pod ลงมาอย่างรวดเร็ว แต่จะมีพฤติกรรมในการเพิ่มจำนวน Pod ที่เร็วและไม่มีการจำกัดการเพิ่มจำนวน Pod ในแต่ละครั้งเพื่อรองรับโหลดที่เพิ่มขึ้นอย่างรวดเร็ว
+    scaleUp:
+      stabilizationWindowSeconds: 30 # 1 minute
+      policies:
+      - type: Percent
+        value: 10 # 10% of the pods
+        periodSeconds: 15 # 1 minute
