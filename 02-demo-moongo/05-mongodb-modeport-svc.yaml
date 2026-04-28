@@ -1,0 +1,19 @@
+# MongoDB NodePort Service - เปิดเผย MongoDB ไปยังภายนอก Node
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-nodeport-svc  # ชื่อของ Service
+  namespace: demomongo  # namespace ที่ Service นี้อยู่
+  labels:
+    app: mongo  # ติดป้ายให้ Service นี้
+spec:
+  # ประเภท Service: NodePort - เปิดให้เข้าถึงผ่าน IP ของ Node
+  type: NodePort
+  ports:
+    - port: 27017  # port ของ Service (internal)
+      protocal: TCP  # protocol ที่ใช้ (TCP/UDP)
+      targetPort: 27017  # port ของ container MongoDB
+      nodePort: 32000  # port ของ Node ที่ใช้เข้าถึงจากภายนอก (30000-32767)
+  # เลือก pod ที่มี label "app: mongo" เพื่อส่ง traffic ไปยังพวกมัน
+  selector:
+    app: mongo

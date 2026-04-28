@@ -1,0 +1,70 @@
+# MongoDB Deployment - ผลิตภัณฑ์ที่ใช้ปรับใช้ MongoDB บนคลัสเตอร์ Kubernetes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+  namespace: demomongo  # namespace ที่ใช้สำหรับ MongoDB
+spec:
+  replicas: 1  # จำนวน pod replica ของ MongoDB (1 instance)
+  selector:
+    matchLabels:
+      app: mongo  # เลือก pod ที่มี label "app: mongo"
+  template:
+    metadata:
+      labels:
+        app: mongo  # ติดป้ายให้ pod นี้
+    spec:
+      containers:
+        # คอนเทนเนอร์ MongoDB หลัก
+        - name: mongo
+          image: mongo  # ใช้ image mongo ตัวเลือก (official MongoDB image)
+          args: ["--dbpath", "/data/db"]  # กำหนด path สำหรับเก็บข้อมูล database
+          # ตรวจสอบว่า MongoDB ยังทำงานอยู่ (Liveness) - รีสตาร์ท container หากหยุดตอบสนอง
+          livenessProbe:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"  # ส่งคำสั่ง ping เพื่อตรวจสอบสถานะ
+            initialDelaySeconds: 30  # รอ 30 วินาทีก่อนเริ่มตรวจสอบ
+            periodSeconds: 10  # ตรวจสอบทุก 10 วินาที
+            timeoutSeconds: 5  # หมดเวลาในการตรวจสอบ 5 วินาที
+            successThreshold: 1  # ต้องสำเร็จ 1 ครั้งติดต่อกัน
+            failureThreshold: 6  # รีสตาร์ท หากล้มเหลว 6 ครั้งติดต่อกัน
+          # ตรวจสอบว่า MongoDB พร้อมรับการเชื่อมต่อ (Readiness)
+          readinessProbe:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          # ตัวแปรสภาพแวดล้อมสำหรับการตั้งค่า MongoDB
+          env:
+            # ชื่อผู้ใช้ root ดึงมาจาก Secret
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secrets
+                  key: username
+            # รหัสผ่าน root ดึงมาจาก Secret
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secrets
+                  key: password
+          # การเชื่อมต่อปริมาณข้อมูล (volumes) ไปยัง container
+          volumeMounts:
+            - name: "mongo-data-dir"  # ชื่อปริมาณข้อมูล
+              mountPath: "/data/db"   # path ในที่ container ที่ติดปริมาณข้อมูลนี้
+      # ปริมาณข้อมูล (Volumes) ที่ใช้ใน Deployment นี้
+      volumes:
+        - name: "mongo-data-dir"  # ชื่อปริมาณข้อมูล
+          persistentVolumeClaim:
+            claimName: "mongo-data-pvc"  # ใช้ PVC สำหรับเก็บข้อมูล MongoDB อย่างถาวร
