@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data-pvc
+  namespace: demomongo
+spec:
+# storageClassName คือชื่อของ StorageClass ที่จะใช้สำหรับ PersistentVolumeClaim นี้ ในที่นี้เราได้ตั้งค่าเป็น "" ซึ่งหมายความว่าเราจะไม่ใช้ StorageClass ใดๆ และจะใช้ PersistentVolume ที่มีการกำหนดไว้ในระบบโดยตรง ซึ่งในกรณีนี้คือ mongo-data-pv ที่เราได้สร้างไว้ก่อนหน้านี้ โดยการตั้งค่านี้จะช่วยให้เราสามารถควบคุมการใช้งาน PersistentVolume ได้อย่างชัดเจนและเหมาะสมกับความต้องการของแอปพลิเคชันของเรา 
+  strorageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  volumeName: mongo-data-pv
+  resources:
+    requests:
+      storage: 1Gi
