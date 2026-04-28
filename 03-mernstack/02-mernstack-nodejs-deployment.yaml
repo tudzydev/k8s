@@ -17,40 +17,49 @@ spec:
         app: nodejs  # ติดป้ายให้ Pod นี้
     spec:
       containers:
-      # คอนเทนเนอร์ Node.js Backend สำหรับ MERN Stack
-      - name: nodejs
-        image: iamsamitdev/mern_nodejs:1.0  # ใช้ custom Node.js image สำหรับ MERN
-        ports:
-        - containerPort: 3000  # Node.js application port
-        # ตัวแปรสภาพแวดล้อมสำหรับการเชื่อมต่อ MongoDB
-        env:
-        - name: DATABASE_USER  # ชื่อผู้ใช้ฐานข้อมูล
-          value: "admin"
-        - name: DATABASE_PASSWORD  # รหัสผ่านฐานข้อมูล
-          value: "1234"
-        - name: DATABASE_HOST  # ชื่อ hostname/service ของ MongoDB
-          value: "mongodb-service" # ชี้ไปยัง MongoDB Service name
-        # Resource requests/limits
-        resources:
-          requests:  # ขออนุญาตของ resources ขั้นต่ำ
-            memory: "64Mi"  # ขอหน่วยความจำ 64 MB
-            cpu: "250m"  # ขอ CPU 0.25 cores
-          limits:  # ขีดจำกัด resources สูงสุด
-            memory: "128Mi"  # สูงสุด 128 MB หน่วยความจำ
-            cpu: "500m"  # สูงสุด 0.5 cores CPU
+        # คอนเทนเนอร์ Node.js Backend สำหรับ MERN Stack
+        - name: nodejs
+          image: iamsamitdev/mern_nodejs:1.0  # ใช้ custom Node.js image สำหรับ MERN
+          imagePullPolicy: Always  # ดึง Image ใหม่ทุกครั้งเมื่อ deploy
+          ports:
+            - containerPort: 3000  # Node.js application port
+          # Resource requests/limits
+          resources:
+            requests:  # ขออนุญาตของ resources ขั้นต่ำ
+              memory: "128Mi"  # ขอหน่วยความจำ 128 MB
+              cpu: "250m"  # ขอ CPU 0.25 cores
+            limits:  # ขีดจำกัด resources สูงสุด
+              memory: "256Mi"  # สูงสุด 256 MB หน่วยความจำ
+              cpu: "500m"  # สูงสุด 0.5 cores CPU
+          # ตัวแปรสภาพแวดล้อมสำหรับการเชื่อมต่อ MongoDB
+          env:
+            # ชื่อผู้ใช้ฐานข้อมูล ดึงมาจาก Secret
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secrets
+                  key: username
+            # รหัสผ่านฐานข้อมูล ดึงมาจาก Secret
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secrets
+                  key: password
+            # ชื่อ hostname/service ของ MongoDB
+            - name: DATABASE_HOST
+              value: "mongodb-service"  # ชี้ไปยัง MongoDB Service name
 ---
-# Node.js Service - เปิดให้เข้าถึง Node.js Backend จากภายนอก cluster
+# Node.js Service - เปิดให้เข้าถึง Node.js Backend ภายใน cluster
 apiVersion: v1
 kind: Service
 metadata:
   name: nodejs-service  # ชื่อของ Service
   namespace: mernstack  # namespace ที่ใช้
 spec:
-  type: NodePort  # ประเภท Service: NodePort (เปิดให้เข้าถึงจากภายนอก Node)
+  type: ClusterIP  # ประเภท Service: ClusterIP (เข้าถึงได้เฉพาะภายใน cluster)
   ports:
     - protocol: TCP  # protocol ที่ใช้
       port: 3000  # port ของ Service (internal)
       targetPort: 3000  # port ของ Node.js container
-      nodePort: 31003  # port ของ Node ที่ใช้เข้าถึงจากภายนอก (30000-32767)
   selector:
     app: nodejs  # เลือก Pod ที่มี label "app: nodejs"

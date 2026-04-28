@@ -1,4 +1,4 @@
-# MongoDB Deployment สำหรับ MERN Stack
+# MongoDB Deployment สำหรับ MERN Stack - ฐานข้อมูล NoSQL
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,53 +17,119 @@ spec:
         app: mongodb  # ติดป้ายให้ Pod นี้
     spec:
       containers:
-      # คอนเทนเนอร์ MongoDB สำหรับ MERN Stack
-      - name: mongodb
-        image: iamsamitdev/mern_mongodb:1.0  # ใช้ custom MongoDB image สำหรับ MERN
-        ports:
-        - containerPort: 27017  # MongoDB default port
-        # Volume mount สำหรับเก็บข้อมูล database อย่างถาวร
-        volumeMounts:
-        - name: mongodb-storage  # ชื่อ volume
-          mountPath: /data/db  # path ใน container ที่ติด volume นี้
-        # Resource requests/limits
-        resources:
-          requests:  # ขออนุญาตของ resources ขั้นต่ำ
-            memory: "64Mi"  # ขอหน่วยความจำ 64 MB
-            cpu: "250m"  # ขอ CPU 0.25 cores
-          limits:  # ขีดจำกัด resources สูงสุด
-            memory: "128Mi"  # สูงสุด 128 MB หน่วยความจำ
-            cpu: "500m"  # สูงสุด 0.5 cores CPU
+        # คอนเทนเนอร์ MongoDB หลัก
+        - name: mongodb
+          image: mongo  # ใช้ official MongoDB image
+          args: ["--dbpath", "/data/db"]  # กำหนด path สำหรับเก็บข้อมูล database
+          # ตรวจสอบว่า MongoDB ยังทำงานอยู่ (Liveness) - รีสตาร์ท container หากหยุดตอบสนอง
+          livenessProbe:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"  # ส่งคำสั่ง ping เพื่อตรวจสอบสถานะ
+            initialDelaySeconds: 30  # รอ 30 วินาทีก่อนเริ่มตรวจสอบ
+            periodSeconds: 10  # ตรวจสอบทุก 10 วินาที
+            timeoutSeconds: 5  # หมดเวลาในการตรวจสอบ 5 วินาที
+            successThreshold: 1  # ต้องสำเร็จ 1 ครั้งติดต่อกัน
+            failureThreshold: 6  # รีสตาร์ท หากล้มเหลว 6 ครั้งติดต่อกัน
+          # ตรวจสอบว่า MongoDB พร้อมรับการเชื่อมต่อ (Readiness)
+          readinessProbe:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          # ตัวแปรสภาพแวดล้อมสำหรับการตั้งค่า MongoDB
+          env:
+            # ชื่อผู้ใช้ root ดึงมาจาก Secret
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secrets
+                  key: username
+            # รหัสผ่าน root ดึงมาจาก Secret
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secrets
+                  key: password
+            # ชื่อ database เริ่มต้นดึงมาจาก Secret
+            - name: MONGO_INITDB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secrets
+                  key: database
+          # Resource requests/limits
+          resources:
+            requests:  # ขออนุญาตของ resources ขั้นต่ำ
+              memory: "500Mi"  # ขอหน่วยความจำ 500 MB
+              cpu: "250m"  # ขอ CPU 0.25 cores
+            limits:  # ขีดจำกัด resources สูงสุด
+              memory: "600Mi"  # สูงสุด 600 MB หน่วยความจำ
+              cpu: "800m"  # สูงสุด 0.8 cores CPU
+          # การเชื่อมต่อปริมาณข้อมูล (volumes) ไปยัง container
+          volumeMounts:
+            - name: mongodb-storage  # ชื่อปริมาณข้อมูล
+              mountPath: "/data/db"   # path ในที่ container ที่ติดปริมาณข้อมูลนี้
       # ปริมาณข้อมูล (Volumes) ที่ใช้ใน Deployment นี้
       volumes:
-      - name: mongodb-storage  # ชื่อ volume
-        persistentVolumeClaim:
-          claimName: mongodb-pvc  # ใช้ PVC สำหรับเก็บข้อมูล MongoDB
+        - name: mongodb-storage  # ชื่อปริมาณข้อมูล
+          persistentVolumeClaim:
+            claimName: mongodb-pvc  # ใช้ PVC สำหรับเก็บข้อมูล MongoDB อย่างถาวร
 ---
-# Persistent Volume Claim - ร้องขอ storage สำหรับ MongoDB
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secrets
+  namespace: mernstack
+data:
+  username: YWRtaW4= # username: admin
+  password: MTIzNA== # password: 1234
+  database: cHJvZHVjdHM= # database: products
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mongodb-pvc  # ชื่อของ PVC
-  namespace: mernstack  # namespace ที่ใช้
+  name: mongodb-pvc
+  namespace: mernstack
 spec:
+  storageClassName: ""
   accessModes:
-    - ReadWriteOnce  # เฉพาะ 1 Pod สามารถ read/write ได้พร้อมกัน
+    - ReadWriteOnce
+  volumeName: mongodb-pv
   resources:
     requests:
-      storage: 1Gi  # ร้องขอ storage 1 GB
+      storage: 1Gi
 ---
-# MongoDB Service - เปิดให้เข้าถึง MongoDB ภายใน cluster
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongodb-pv
+  namespace: mernstack
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/mongodb
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongodb-service  # ชื่อของ Service
-  namespace: mernstack  # namespace ที่ใช้
+  name: mongodb-service
+  namespace: mernstack
 spec:
-  type: ClusterIP  # ประเภท Service: ClusterIP (เข้าถึงได้เฉพาะภายใน cluster)
+  type: ClusterIP
   ports:
-    - protocol: TCP  # protocol ที่ใช้
-      port: 27017  # port ของ Service (internal)
-      targetPort: 27017  # port ของ MongoDB container
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
   selector:
-    app: mongodb  # เลือก Pod ที่มี label "app: mongodb"
+    app: mongodb
