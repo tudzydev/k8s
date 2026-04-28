@@ -1,0 +1,30 @@
+# MongoDB Client Deployment - Pod สำหรับเชื่อมต่อและทดสอบ MongoDB
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mongo-client  # ติดป้ายให้ Deployment นี้
+  name: mongo-client  # ชื่อ Deployment
+  namespace: demomongo  # namespace ที่ใช้สำหรับ MongoDB
+spec:
+  replicas: 1  # จำนวน pod replica (1 instance ของ client)
+  selector:
+    matchLabels:
+      app: mongo-client  # เลือก pod ที่มี label "app: mongo-client"
+  template:
+    metadata:
+      labels:
+        app: mongo-client  # ติดป้ายให้ pod นี้
+    spec:
+      containers:
+        # คอนเทนเนอร์ MongoDB client สำหรับทดสอบและจัดการ database
+        - image: mongo:4.4-bionic  # ใช้ MongoDB image version 4.4 บน Debian bionic
+          name: mongo-client  # ชื่อคอนเทนเนอร์
+          # ตัวแปรสภาพแวดล้อมสำหรับการเชื่อมต่อ
+          env:
+            # ชื่อผู้ใช้สำหรับเชื่อมต่อ MongoDB (ใช้ dummy แสดงว่าเป็นสำหรับทดสอบเท่านั้น)
+            - name: mongo-client_INITDB_ROOT_USERNAME
+              value: "dummy"
+            # รหัสผ่านสำหรับเชื่อมต่อ MongoDB
+            - name: mongo-client_INITDB_ROOT_PASSWORD
+              value: "dummy"
