@@ -57,7 +57,7 @@ metadata:
   name: node-exporter
   namespace: prometheus
 spec:
-  clusterIP: NodePort
+  type: NodePort
   ports:
   - name: https
     port: 9100
