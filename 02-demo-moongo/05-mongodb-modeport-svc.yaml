@@ -11,7 +11,7 @@ spec:
   type: NodePort
   ports:
     - port: 27017  # port ของ Service (internal)
-      protocal: TCP  # protocol ที่ใช้ (TCP/UDP)
+      protocol: TCP  # protocol ที่ใช้ (TCP/UDP)
       targetPort: 27017  # port ของ container MongoDB
       nodePort: 32000  # port ของ Node ที่ใช้เข้าถึงจากภายนอก (30000-32767)
   # เลือก pod ที่มี label "app: mongo" เพื่อส่ง traffic ไปยังพวกมัน
