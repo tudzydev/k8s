@@ -1,0 +1,69 @@
+# MongoDB Deployment สำหรับ MERN Stack
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-deployment  # ชื่อ Deployment
+  namespace: mernstack  # namespace สำหรับ MERN Stack
+  labels:
+    app: mongodb  # ติดป้ายให้ Deployment นี้
+spec:
+  replicas: 1  # จำนวน Pod replica ของ MongoDB (1 instance)
+  selector:
+    matchLabels:
+      app: mongodb  # เลือก Pod ที่มี label "app: mongodb"
+  template:
+    metadata:
+      labels:
+        app: mongodb  # ติดป้ายให้ Pod นี้
+    spec:
+      containers:
+      # คอนเทนเนอร์ MongoDB สำหรับ MERN Stack
+      - name: mongodb
+        image: iamsamitdev/mern_mongodb:1.0  # ใช้ custom MongoDB image สำหรับ MERN
+        ports:
+        - containerPort: 27017  # MongoDB default port
+        # Volume mount สำหรับเก็บข้อมูล database อย่างถาวร
+        volumeMounts:
+        - name: mongodb-storage  # ชื่อ volume
+          mountPath: /data/db  # path ใน container ที่ติด volume นี้
+        # Resource requests/limits
+        resources:
+          requests:  # ขออนุญาตของ resources ขั้นต่ำ
+            memory: "64Mi"  # ขอหน่วยความจำ 64 MB
+            cpu: "250m"  # ขอ CPU 0.25 cores
+          limits:  # ขีดจำกัด resources สูงสุด
+            memory: "128Mi"  # สูงสุด 128 MB หน่วยความจำ
+            cpu: "500m"  # สูงสุด 0.5 cores CPU
+      # ปริมาณข้อมูล (Volumes) ที่ใช้ใน Deployment นี้
+      volumes:
+      - name: mongodb-storage  # ชื่อ volume
+        persistentVolumeClaim:
+          claimName: mongodb-pvc  # ใช้ PVC สำหรับเก็บข้อมูล MongoDB
+---
+# Persistent Volume Claim - ร้องขอ storage สำหรับ MongoDB
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc  # ชื่อของ PVC
+  namespace: mernstack  # namespace ที่ใช้
+spec:
+  accessModes:
+    - ReadWriteOnce  # เฉพาะ 1 Pod สามารถ read/write ได้พร้อมกัน
+  resources:
+    requests:
+      storage: 1Gi  # ร้องขอ storage 1 GB
+---
+# MongoDB Service - เปิดให้เข้าถึง MongoDB ภายใน cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service  # ชื่อของ Service
+  namespace: mernstack  # namespace ที่ใช้
+spec:
+  type: ClusterIP  # ประเภท Service: ClusterIP (เข้าถึงได้เฉพาะภายใน cluster)
+  ports:
+    - protocol: TCP  # protocol ที่ใช้
+      port: 27017  # port ของ Service (internal)
+      targetPort: 27017  # port ของ MongoDB container
+  selector:
+    app: mongodb  # เลือก Pod ที่มี label "app: mongodb"

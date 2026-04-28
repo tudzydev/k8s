@@ -1,0 +1,48 @@
+# React.js Frontend Deployment สำหรับ MERN Stack
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reactjs-deployment  # ชื่อ Deployment
+  namespace: mernstack  # namespace สำหรับ MERN Stack
+  labels:
+    app: reactjs  # ติดป้ายให้ Deployment นี้
+spec:
+  replicas: 3  # จำนวน Pod replica ของ React.js (3 instances สำหรับ high availability)
+  selector:
+    matchLabels:
+      app: reactjs  # เลือก Pod ที่มี label "app: reactjs"
+  template:
+    metadata:
+      labels:
+        app: reactjs  # ติดป้ายให้ Pod นี้
+    spec:
+      containers:
+      # คอนเทนเนอร์ React.js Frontend สำหรับ MERN Stack
+      - name: reactjs
+        image: iamsamitdev/mern_react:1.0  # ใช้ custom React.js image สำหรับ MERN
+        ports:
+        - containerPort: 80  # Web server port (nginx/apache)
+        # Resource requests/limits
+        resources:
+          requests:  # ขออนุญาตของ resources ขั้นต่ำ
+            memory: "64Mi"  # ขอหน่วยความจำ 64 MB
+            cpu: "250m"  # ขอ CPU 0.25 cores
+          limits:  # ขีดจำกัด resources สูงสุด
+            memory: "128Mi"  # สูงสุด 128 MB หน่วยความจำ
+            cpu: "500m"  # สูงสุด 0.5 cores CPU
+---
+# React.js Service - เปิดให้เข้าถึง React.js Frontend จากภายนอก cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: reactjs-service  # ชื่อของ Service
+  namespace: mernstack  # namespace ที่ใช้
+spec:
+  type: NodePort  # ประเภท Service: NodePort (เปิดให้เข้าถึงจากภายนอก Node)
+  ports:
+    - protocol: TCP  # protocol ที่ใช้
+      port: 80  # port ของ Service (internal)
+      targetPort: 80  # port ของ React.js web server (nginx/apache)
+      nodePort: 30833  # port ของ Node ที่ใช้เข้าถึงจากภายนอก (30000-32767)
+  selector:
+    app: reactjs  # เลือก Pod ที่มี label "app: reactjs"
