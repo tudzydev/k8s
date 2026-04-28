@@ -62,7 +62,7 @@ spec:
   - name: https
     port: 9100
     targetPort: https
-    NodePort: 30055
+    nodePort: 30055
   selector:
     app.kubernetes.io/component: exporter
     app.kubernetes.io/name: node-exporter
